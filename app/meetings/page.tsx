@@ -1,0 +1,167 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+
+interface Meeting {
+  id: string;
+  title: string;
+  date: string;
+  participants: string;
+  _count: {
+    actionItems: number;
+  };
+}
+
+export default function MeetingsPage() {
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    date: new Date().toISOString().split("T")[0],
+    participants: "",
+  });
+
+  useEffect(() => {
+    fetchMeetings();
+  }, []);
+
+  const fetchMeetings = async () => {
+    try {
+      const response = await fetch("/api/meetings");
+      const data = await response.json();
+      setMeetings(data);
+    } catch (error) {
+      console.error("Error fetching meetings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("/api/meetings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        setShowForm(false);
+        setFormData({ title: "", date: new Date().toISOString().split("T")[0], participants: "" });
+        fetchMeetings();
+      }
+    } catch (error) {
+      console.error("Error creating meeting:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Meetings</h1>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+        >
+          {showForm ? "Cancel" : "New Meeting"}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="bg-white p-6 rounded-lg shadow mb-8">
+          <h2 className="text-xl font-semibold mb-4">Create New Meeting</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                Title
+              </label>
+              <input
+                type="text"
+                id="title"
+                required
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+                Date
+              </label>
+              <input
+                type="date"
+                id="date"
+                required
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label htmlFor="participants" className="block text-sm font-medium text-gray-700">
+                Participants
+              </label>
+              <input
+                type="text"
+                id="participants"
+                value={formData.participants}
+                onChange={(e) => setFormData({ ...formData, participants: e.target.value })}
+                placeholder="John, Jane, etc."
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            >
+              Create Meeting
+            </button>
+          </form>
+        </div>
+      )}
+
+      <div className="bg-white shadow overflow-hidden rounded-md">
+        {meetings.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            No meetings yet. Create your first meeting to get started.
+          </div>
+        ) : (
+          <ul className="divide-y divide-gray-200">
+            {meetings.map((meeting) => (
+              <li key={meeting.id}>
+                <Link
+                  href={`/meetings/${meeting.id}`}
+                  className="block hover:bg-gray-50 px-6 py-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-medium text-gray-900">{meeting.title}</h3>
+                      <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                        <span>{new Date(meeting.date).toLocaleDateString()}</span>
+                        {meeting.participants && <span>{meeting.participants}</span>}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {meeting._count.actionItems} action item{meeting._count.actionItems !== 1 ? "s" : ""}
+                    </div>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
