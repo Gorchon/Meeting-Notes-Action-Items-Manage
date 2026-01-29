@@ -95,8 +95,9 @@ export async function POST(
     });
   } catch (error) {
     console.error("Error generating action items:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to generate action items";
     return NextResponse.json(
-      { error: "Failed to generate action items" },
+      { error: errorMessage, details: error },
       { status: 500 }
     );
   }

@@ -70,8 +70,9 @@ export async function POST(
     });
   } catch (error) {
     console.error("Error generating summary:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to generate summary";
     return NextResponse.json(
-      { error: "Failed to generate summary" },
+      { error: errorMessage, details: error },
       { status: 500 }
     );
   }
