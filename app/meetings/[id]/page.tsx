@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Meeting {
   id: string;
@@ -36,6 +38,7 @@ export default function MeetingDetailPage() {
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [activeTab, setActiveTab] = useState<"summary" | "decisions" | "actions">("summary");
   const [outputs, setOutputs] = useState<Record<string, AIOutput>>({});
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
@@ -45,6 +48,21 @@ export default function MeetingDetailPage() {
   useEffect(() => {
     fetchMeeting();
   }, [id]);
+
+  // Debounced autosave
+  useEffect(() => {
+    if (!meeting) return;
+
+    // Don't autosave if notes haven't changed from the fetched version
+    if (notes === meeting.rawNotes) return;
+
+    setSaveStatus("saving");
+    const timeoutId = setTimeout(() => {
+      saveNotes();
+    }, 800);
+
+    return () => clearTimeout(timeoutId);
+  }, [notes]);
 
   const fetchMeeting = async () => {
     try {
@@ -67,14 +85,20 @@ export default function MeetingDetailPage() {
 
   const saveNotes = async () => {
     setSaving(true);
+    setSaveStatus("saving");
     try {
       await fetch(`/api/meetings/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rawNotes: notes }),
       });
+      setSaveStatus("saved");
+      // Reset to idle after 2 seconds
+      setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (error) {
       console.error("Error saving notes:", error);
+      setSaveStatus("error");
+      setTimeout(() => setSaveStatus("idle"), 3000);
     } finally {
       setSaving(false);
     }
@@ -142,13 +166,26 @@ export default function MeetingDetailPage() {
         {/* Left Panel: Notes Editor */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Meeting Notes</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Meeting Notes</h2>
+              {saveStatus !== "idle" && (
+                <span className={`text-xs px-2 py-1 rounded ${
+                  saveStatus === "saving"
+                    ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                    : saveStatus === "saved"
+                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                    : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                }`}>
+                  {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Saved" : "Error saving"}
+                </span>
+              )}
+            </div>
             <button
               onClick={saveNotes}
               disabled={saving}
               className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600"
             >
-              {saving ? "Saving..." : "Save"}
+              Save
             </button>
           </div>
           <textarea
@@ -203,9 +240,11 @@ export default function MeetingDetailPage() {
             )}
 
             {/* Content Display */}
-            <div className="prose max-w-none">
+            <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-gray-900 dark:prose-p:text-gray-100 prose-ul:text-gray-900 dark:prose-ul:text-gray-100 prose-ol:text-gray-900 dark:prose-ol:text-gray-100 prose-table:text-gray-900 dark:prose-table:text-gray-100 prose-strong:text-gray-900 dark:prose-strong:text-gray-100">
               {activeTab === "summary" && outputs.summary && (
-                <div className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{outputs.summary.content}</div>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {outputs.summary.content}
+                </ReactMarkdown>
               )}
 
               {activeTab === "decisions" && outputs.decisions && (
