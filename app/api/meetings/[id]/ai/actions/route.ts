@@ -41,6 +41,41 @@ export async function POST(
     });
 
     if (existingOutput) {
+      // Parse cached action items if they don't exist yet
+      try {
+        const existingItems = await prisma.actionItem.findMany({
+          where: { meetingId: id },
+        });
+
+        if (existingItems.length === 0) {
+          // Parse and create action items from cached content
+          let content = existingOutput.content;
+          // Strip markdown code fences if present
+          content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+
+          const actions = JSON.parse(content);
+          if (Array.isArray(actions)) {
+            const actionItems = actions.map((action: {
+              description: string;
+              owner?: string | null;
+              dueDate?: string | null;
+            }) => ({
+              meetingId: id,
+              description: action.description,
+              owner: action.owner || null,
+              dueDate: action.dueDate ? new Date(action.dueDate) : null,
+              status: "open",
+            }));
+
+            await prisma.actionItem.createMany({
+              data: actionItems,
+            });
+          }
+        }
+      } catch (parseError) {
+        console.error("Error parsing cached action items:", parseError);
+      }
+
       // Return cached result
       return NextResponse.json({
         cached: true,
@@ -66,7 +101,11 @@ export async function POST(
 
     // Parse action items and create them in the database
     try {
-      const actions = JSON.parse(aiResponse.content);
+      let content = aiResponse.content;
+      // Strip markdown code fences if present
+      content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+
+      const actions = JSON.parse(content);
       if (Array.isArray(actions)) {
         const actionItems = actions.map((action: {
           description: string;

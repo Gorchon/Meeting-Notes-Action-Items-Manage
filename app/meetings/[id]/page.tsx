@@ -212,7 +212,11 @@ export default function MeetingDetailPage() {
                 <div className="space-y-2">
                   {(() => {
                     try {
-                      const decisions = JSON.parse(outputs.decisions.content);
+                      // Strip markdown code fences if present
+                      let content = outputs.decisions.content;
+                      content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+
+                      const decisions = JSON.parse(content);
                       return decisions.length > 0 ? (
                         <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
                           {decisions.map((decision: string, i: number) => (
