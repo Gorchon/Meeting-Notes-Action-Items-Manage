@@ -47,6 +47,7 @@ export default function MeetingDetailPage() {
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   useEffect(() => {
     fetchMeeting();
@@ -173,16 +174,119 @@ export default function MeetingDetailPage() {
     }
   };
 
+  const getMeetingHeader = () => {
+    if (!meeting) return "";
+    return `# ${meeting.title}\n\n**Date:** ${new Date(meeting.date).toLocaleDateString()}\n**Participants:** ${meeting.participants}\n\n---\n\n`;
+  };
+
+  const exportToClipboard = async (type: "summary" | "decisions" | "actions") => {
+    try {
+      let content = getMeetingHeader();
+
+      if (type === "summary" && outputs.summary) {
+        content += `## Summary\n\n${outputs.summary.content}`;
+      } else if (type === "decisions" && outputs.decisions) {
+        content += `## Decisions\n\n`;
+        try {
+          let decisionsContent = outputs.decisions.content;
+          decisionsContent = decisionsContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+          const decisions = JSON.parse(decisionsContent);
+          if (decisions.length > 0) {
+            decisions.forEach((decision: string) => {
+              content += `- ${decision}\n`;
+            });
+          } else {
+            content += "No decisions made.\n";
+          }
+        } catch {
+          content += outputs.decisions.content;
+        }
+      } else if (type === "actions" && actionItems.length > 0) {
+        content += `## Action Items\n\n`;
+        actionItems.forEach((item) => {
+          content += `- [ ] ${item.description}`;
+          if (item.owner || item.dueDate) {
+            content += ` (`;
+            if (item.owner) content += `Owner: ${item.owner}`;
+            if (item.owner && item.dueDate) content += `, `;
+            if (item.dueDate) content += `Due: ${new Date(item.dueDate).toLocaleDateString()}`;
+            content += `)`;
+          }
+          content += `\n`;
+        });
+      }
+
+      await navigator.clipboard.writeText(content);
+      showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} copied to clipboard`, "success");
+      setShowExportMenu(false);
+    } catch (error) {
+      console.error("Error copying to clipboard:", error);
+      showToast("Failed to copy to clipboard", "error");
+    }
+  };
+
   if (!meeting) {
     return <MeetingDetailSkeleton />;
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{meeting.title}</h1>
-        <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          {new Date(meeting.date).toLocaleDateString()} • {meeting.participants}
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{meeting.title}</h1>
+          <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            {new Date(meeting.date).toLocaleDateString()} • {meeting.participants}
+          </div>
+        </div>
+
+        {/* Export Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showExportMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowExportMenu(false)}
+              />
+              <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-20">
+                <div className="py-1">
+                  <button
+                    onClick={() => exportToClipboard("summary")}
+                    disabled={!outputs.summary}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Copy Summary as Markdown
+                  </button>
+                  <button
+                    onClick={() => exportToClipboard("decisions")}
+                    disabled={!outputs.decisions}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Copy Decisions as Markdown
+                  </button>
+                  <button
+                    onClick={() => exportToClipboard("actions")}
+                    disabled={actionItems.length === 0}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Copy Actions as Markdown
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
