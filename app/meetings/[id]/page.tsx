@@ -86,12 +86,21 @@ export default function MeetingDetailPage() {
   const saveNotes = async () => {
     setSaving(true);
     setSaveStatus("saving");
+
+    // Create a minimum delay of 1 second for visual feedback
+    const minDelay = new Promise(resolve => setTimeout(resolve, 1000));
+
     try {
-      await fetch(`/api/meetings/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawNotes: notes }),
-      });
+      // Wait for both the save and the minimum delay
+      await Promise.all([
+        fetch(`/api/meetings/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rawNotes: notes }),
+        }),
+        minDelay
+      ]);
+
       setSaveStatus("saved");
       // Reset to idle after 2 seconds
       setTimeout(() => setSaveStatus("idle"), 2000);
