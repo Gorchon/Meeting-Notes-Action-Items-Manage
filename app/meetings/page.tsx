@@ -79,11 +79,11 @@ export default function MeetingsPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white p-6 rounded-lg shadow mb-8">
-          <h2 className="text-xl font-semibold mb-4">Create New Meeting</h2>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Create New Meeting</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Title
               </label>
               <input
@@ -92,11 +92,11 @@ export default function MeetingsPage() {
                 required
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none"
               />
             </div>
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Date
               </label>
               <input
@@ -105,11 +105,11 @@ export default function MeetingsPage() {
                 required
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none"
               />
             </div>
             <div>
-              <label htmlFor="participants" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="participants" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Participants
               </label>
               <input
@@ -118,12 +118,12 @@ export default function MeetingsPage() {
                 value={formData.participants}
                 onChange={(e) => setFormData({ ...formData, participants: e.target.value })}
                 placeholder="John, Jane, etc."
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
             <button
               type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600"
             >
               Create Meeting
             </button>
@@ -131,28 +131,28 @@ export default function MeetingsPage() {
         </div>
       )}
 
-      <div className="bg-white shadow overflow-hidden rounded-md">
+      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden rounded-md">
         {meetings.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
             No meetings yet. Create your first meeting to get started.
           </div>
         ) : (
-          <ul className="divide-y divide-gray-200">
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {meetings.map((meeting) => (
               <li key={meeting.id}>
                 <Link
                   href={`/meetings/${meeting.id}`}
-                  className="block hover:bg-gray-50 px-6 py-4"
+                  className="block hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-4 transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg font-medium text-gray-900">{meeting.title}</h3>
-                      <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{meeting.title}</h3>
+                      <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                         <span>{new Date(meeting.date).toLocaleDateString()}</span>
                         {meeting.participants && <span>{meeting.participants}</span>}
                       </div>
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       {meeting._count.actionItems} action item{meeting._count.actionItems !== 1 ? "s" : ""}
                     </div>
                   </div>
