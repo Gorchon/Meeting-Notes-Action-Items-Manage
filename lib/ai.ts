@@ -24,7 +24,7 @@ export async function generateSummary(rawNotes: string): Promise<AIResponse> {
 
   try {
     const message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 2048,
       messages: [
         {
@@ -57,7 +57,7 @@ export async function generateDecisions(rawNotes: string): Promise<AIResponse> {
 
   try {
     const message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 2048,
       messages: [
         {
@@ -84,24 +84,33 @@ export async function generateDecisions(rawNotes: string): Promise<AIResponse> {
 
 export async function generateActions(rawNotes: string): Promise<AIResponse> {
   // TODO: Add token limit enforcement
-  const message = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-20241022",
-    max_tokens: 2048,
-    messages: [
-      {
-        role: "user",
-        content: `Extract all action items from this meeting. Return them as a JSON array of objects with fields: description (string), owner (string or null), dueDate (ISO date string or null). If no action items, return an empty array.\n\nNotes:\n${rawNotes}`,
-      },
-    ],
-  });
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error("ANTHROPIC_API_KEY is not set in environment variables");
+  }
 
-  const content = message.content[0];
-  const text = content.type === "text" ? content.text : "[]";
+  try {
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2048,
+      messages: [
+        {
+          role: "user",
+          content: `Extract all action items from this meeting. Return them as a JSON array of objects with fields: description (string), owner (string or null), dueDate (ISO date string or null). If no action items, return an empty array.\n\nNotes:\n${rawNotes}`,
+        },
+      ],
+    });
 
-  return {
-    content: text,
-    promptTokens: message.usage.input_tokens,
-    completionTokens: message.usage.output_tokens,
-    model: message.model,
-  };
+    const content = message.content[0];
+    const text = content.type === "text" ? content.text : "[]";
+
+    return {
+      content: text,
+      promptTokens: message.usage.input_tokens,
+      completionTokens: message.usage.output_tokens,
+      model: message.model,
+    };
+  } catch (error) {
+    console.error("Anthropic API error in generateActions:", error);
+    throw error;
+  }
 }
