@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { DarkModeProvider } from "@/components/DarkModeProvider";
 import { Navigation } from "@/components/Navigation";
+import { ToastProvider } from "@/components/ToastProvider";
 
 export const metadata: Metadata = {
   title: "AI Meeting Notes & Action Items Manager",
@@ -17,10 +18,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased bg-gray-50 dark:bg-gray-900 transition-colors">
         <DarkModeProvider>
-          <Navigation />
-          <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            {children}
-          </main>
+          <ToastProvider>
+            <Navigation />
+            <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
+              {children}
+            </main>
+          </ToastProvider>
         </DarkModeProvider>
       </body>
     </html>

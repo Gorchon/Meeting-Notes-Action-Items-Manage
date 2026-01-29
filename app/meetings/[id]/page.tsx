@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { MeetingDetailSkeleton } from "@/components/Skeleton";
+import { useToast } from "@/components/ToastProvider";
 
 interface Meeting {
   id: string;
@@ -34,6 +36,7 @@ interface ActionItem {
 export default function MeetingDetailPage() {
   const params = useParams();
   const id = params.id as string;
+  const { showToast } = useToast();
 
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [notes, setNotes] = useState("");
@@ -102,11 +105,13 @@ export default function MeetingDetailPage() {
       ]);
 
       setSaveStatus("saved");
+      showToast("Notes saved successfully", "success");
       // Reset to idle after 2 seconds
       setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (error) {
       console.error("Error saving notes:", error);
       setSaveStatus("error");
+      showToast("Failed to save notes", "error");
       setTimeout(() => setSaveStatus("idle"), 3000);
     } finally {
       setSaving(false);
@@ -130,12 +135,21 @@ export default function MeetingDetailPage() {
       const data = await response.json();
       setOutputs({ ...outputs, [type]: data });
 
+      // Show success toast
+      const typeName = type.charAt(0).toUpperCase() + type.slice(1);
+      showToast(
+        data.cached ? `${typeName} loaded from cache` : `${typeName} generated successfully`,
+        "success"
+      );
+
       // Refresh action items if we generated actions
       if (type === "actions") {
         fetchMeeting();
       }
     } catch (error) {
-      setErrors({ ...errors, [type]: error instanceof Error ? error.message : "Failed to generate" });
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate";
+      setErrors({ ...errors, [type]: errorMessage });
+      showToast(errorMessage, "error");
     } finally {
       setLoadingStates({ ...loadingStates, [type]: false });
     }
@@ -149,17 +163,18 @@ export default function MeetingDetailPage() {
         body: JSON.stringify(updates),
       });
       fetchMeeting();
+      showToast(
+        updates.status === "done" ? "Action item marked as done" : "Action item marked as open",
+        "success"
+      );
     } catch (error) {
       console.error("Error updating action item:", error);
+      showToast("Failed to update action item", "error");
     }
   };
 
   if (!meeting) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center text-gray-900 dark:text-gray-100">Loading...</div>
-      </div>
-    );
+    return <MeetingDetailSkeleton />;
   }
 
   return (

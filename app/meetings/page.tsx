@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { MeetingListSkeleton } from "@/components/Skeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { useToast } from "@/components/ToastProvider";
 
 interface Meeting {
   id: string;
@@ -14,6 +17,7 @@ interface Meeting {
 }
 
 export default function MeetingsPage() {
+  const { showToast } = useToast();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -53,9 +57,13 @@ export default function MeetingsPage() {
         setShowForm(false);
         setFormData({ title: "", date: new Date().toISOString().split("T")[0], participants: "" });
         fetchMeetings();
+        showToast("Meeting created successfully", "success");
+      } else {
+        showToast("Failed to create meeting", "error");
       }
     } catch (error) {
       console.error("Error creating meeting:", error);
+      showToast("Failed to create meeting", "error");
     }
   };
 
@@ -71,7 +79,10 @@ export default function MeetingsPage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center text-gray-900 dark:text-gray-100">Loading...</div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Meetings</h1>
+        </div>
+        <MeetingListSkeleton />
       </div>
     );
   }
@@ -153,14 +164,26 @@ export default function MeetingsPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden rounded-md">
-        {filteredMeetings.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            {meetings.length === 0
-              ? "No meetings yet. Create your first meeting to get started."
-              : "No meetings match your search."}
-          </div>
+      {filteredMeetings.length === 0 ? (
+        meetings.length === 0 ? (
+          <EmptyState
+            icon="meetings"
+            title="No meetings yet"
+            description="Create your first meeting to start tracking notes and generating AI-powered insights."
+            action={{
+              label: "Create Meeting",
+              onClick: () => setShowForm(true),
+            }}
+          />
         ) : (
+          <EmptyState
+            icon="search"
+            title="No meetings found"
+            description="Try adjusting your search query to find what you're looking for."
+          />
+        )
+      ) : (
+        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden rounded-md">
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {filteredMeetings.map((meeting) => (
               <li key={meeting.id}>
@@ -184,8 +207,8 @@ export default function MeetingsPage() {
               </li>
             ))}
           </ul>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { ActionItemListSkeleton } from "@/components/Skeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { useToast } from "@/components/ToastProvider";
 
 interface ActionItem {
   id: string;
@@ -17,6 +20,7 @@ interface ActionItem {
 }
 
 export default function ActionItemsPage() {
+  const { showToast } = useToast();
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "open" | "done">("all");
@@ -48,8 +52,13 @@ export default function ActionItemsPage() {
         body: JSON.stringify(updates),
       });
       fetchActionItems();
+      showToast(
+        updates.status === "done" ? "Action item marked as done" : "Action item marked as open",
+        "success"
+      );
     } catch (error) {
       console.error("Error updating action item:", error);
+      showToast("Failed to update action item", "error");
     }
   };
 
@@ -79,7 +88,10 @@ export default function ActionItemsPage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center text-gray-900 dark:text-gray-100">Loading...</div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Action Items</h1>
+        </div>
+        <ActionItemListSkeleton />
       </div>
     );
   }
@@ -169,11 +181,19 @@ export default function ActionItemsPage() {
       </div>
 
       {filteredItems.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center text-gray-500 dark:text-gray-400">
-          {actionItems.length === 0
-            ? "No action items found. Create meetings and generate action items to get started."
-            : "No action items match your filters."}
-        </div>
+        actionItems.length === 0 ? (
+          <EmptyState
+            icon="actions"
+            title="No action items yet"
+            description="Create meetings and generate action items to start tracking your tasks."
+          />
+        ) : (
+          <EmptyState
+            icon="search"
+            title="No action items found"
+            description="Try adjusting your filters to find what you're looking for."
+          />
+        )
       ) : (
         <div className="space-y-4">
           {filteredItems.map((item) => (
