@@ -20,6 +20,9 @@ export default function ActionItemsPage() {
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "open" | "done">("all");
+  const [ownerSearch, setOwnerSearch] = useState("");
+  const [dueDateFrom, setDueDateFrom] = useState("");
+  const [dueDateTo, setDueDateTo] = useState("");
 
   useEffect(() => {
     fetchActionItems();
@@ -51,8 +54,23 @@ export default function ActionItemsPage() {
   };
 
   const filteredItems = actionItems.filter((item) => {
-    if (filter === "all") return true;
-    return item.status === filter;
+    // Status filter
+    if (filter !== "all" && item.status !== filter) return false;
+
+    // Owner search filter
+    if (ownerSearch && (!item.owner || !item.owner.toLowerCase().includes(ownerSearch.toLowerCase()))) {
+      return false;
+    }
+
+    // Due date range filter
+    if (dueDateFrom || dueDateTo) {
+      if (!item.dueDate) return false;
+      const itemDate = new Date(item.dueDate);
+      if (dueDateFrom && itemDate < new Date(dueDateFrom)) return false;
+      if (dueDateTo && itemDate > new Date(dueDateTo)) return false;
+    }
+
+    return true;
   });
 
   const openCount = actionItems.filter((item) => item.status === "open").length;
@@ -77,25 +95,84 @@ export default function ActionItemsPage() {
         </div>
       </div>
 
-      <div className="mb-6 flex space-x-2">
-        {(["all", "open", "done"] as const).map((status) => (
+      <div className="mb-6 space-y-4">
+        <div className="flex space-x-2">
+          {(["all", "open", "done"] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-4 py-2 rounded-md ${
+                filter === status
+                  ? "bg-blue-600 dark:bg-blue-500 text-white"
+                  : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+              }`}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label htmlFor="owner-search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Owner
+            </label>
+            <input
+              type="text"
+              id="owner-search"
+              placeholder="Search by owner..."
+              value={ownerSearch}
+              onChange={(e) => setOwnerSearch(e.target.value)}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="due-date-from" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Due Date From
+            </label>
+            <input
+              type="date"
+              id="due-date-from"
+              value={dueDateFrom}
+              onChange={(e) => setDueDateFrom(e.target.value)}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="due-date-to" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Due Date To
+            </label>
+            <input
+              type="date"
+              id="due-date-to"
+              value={dueDateTo}
+              onChange={(e) => setDueDateTo(e.target.value)}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {(ownerSearch || dueDateFrom || dueDateTo) && (
           <button
-            key={status}
-            onClick={() => setFilter(status)}
-            className={`px-4 py-2 rounded-md ${
-              filter === status
-                ? "bg-blue-600 dark:bg-blue-500 text-white"
-                : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-            }`}
+            onClick={() => {
+              setOwnerSearch("");
+              setDueDateFrom("");
+              setDueDateTo("");
+            }}
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
           >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            Clear filters
           </button>
-        ))}
+        )}
       </div>
 
       {filteredItems.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center text-gray-500 dark:text-gray-400">
-          No action items found. Create meetings and generate action items to get started.
+          {actionItems.length === 0
+            ? "No action items found. Create meetings and generate action items to get started."
+            : "No action items match your filters."}
         </div>
       ) : (
         <div className="space-y-4">

@@ -17,6 +17,7 @@ export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     date: new Date().toISOString().split("T")[0],
@@ -58,6 +59,15 @@ export default function MeetingsPage() {
     }
   };
 
+  const filteredMeetings = meetings.filter((meeting) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      meeting.title.toLowerCase().includes(query) ||
+      meeting.participants.toLowerCase().includes(query)
+    );
+  });
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -77,6 +87,18 @@ export default function MeetingsPage() {
           {showForm ? "Cancel" : "New Meeting"}
         </button>
       </div>
+
+      {!showForm && (
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search meetings by title or participant..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
+          />
+        </div>
+      )}
 
       {showForm && (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow mb-8">
@@ -132,13 +154,15 @@ export default function MeetingsPage() {
       )}
 
       <div className="bg-white dark:bg-gray-800 shadow overflow-hidden rounded-md">
-        {meetings.length === 0 ? (
+        {filteredMeetings.length === 0 ? (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            No meetings yet. Create your first meeting to get started.
+            {meetings.length === 0
+              ? "No meetings yet. Create your first meeting to get started."
+              : "No meetings match your search."}
           </div>
         ) : (
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-            {meetings.map((meeting) => (
+            {filteredMeetings.map((meeting) => (
               <li key={meeting.id}>
                 <Link
                   href={`/meetings/${meeting.id}`}
