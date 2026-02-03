@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { MeetingListSkeleton } from "@/components/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
+import { MeetingListSkeleton } from "@/components/Skeleton";
 import { useToast } from "@/components/ToastProvider";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 interface Meeting {
   id: string;
@@ -15,6 +15,8 @@ interface Meeting {
     actionItems: number;
   };
 }
+
+// Meetings Page Component
 
 export default function MeetingsPage() {
   const { showToast } = useToast();
